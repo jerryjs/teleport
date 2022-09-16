@@ -1,13 +1,13 @@
 version: '2'
 services:
-  # this container generates a config to be used by teleport
-  configure:
-    image: public.ecr.aws/gravitational/teleport-lab:10
-    container_name: teleport-configure
-    entrypoint: /bin/sh
-    command: -c "/usr/bin/dumb-init teleport configure -o /etc/teleport/teleport.yml ; sed -i -e '/nodename/d' /etc/teleport/teleport.yml"
-    volumes:
-      - config:/etc/teleport
+  # # this container generates a config to be used by teleport
+  # configure:
+  #   image: public.ecr.aws/gravitational/teleport-lab:10
+  #   container_name: teleport-configure
+  #   entrypoint: /bin/sh
+  #   command: -c "/usr/bin/dumb-init teleport configure -o /etc/teleport/teleport.yaml ; sed -i -e '/nodename/d' /etc/teleport/teleport.yaml"
+  #   volumes:
+  #     - config:/etc/teleport
 
   # This container depends on the config written by the configure container above, so it
   # sleeps for a second on startup to allow the configure container to run first.
@@ -16,18 +16,24 @@ services:
     container_name: teleport
     entrypoint: /bin/sh
     hostname: luna.teleport
-    command: -c "/usr/bin/dumb-init teleport start -d -c /etc/teleport.d/teleport.yaml"
+    command: -c "/usr/bin/dumb-init teleport start -d -c /etc/teleport/teleport.yaml"
     ports:
       - "3023:3023"
       - "3024:3024"
       - "3025:3025"
       - "443:443"
     volumes:
-      - config:/etc/teleport
+      - $PWD/config/teleport-server.yaml:/etc/teleport/teleport.yaml
       - data:/var/lib/teleport
       - certs:/mnt/shared/certs
-    depends_on:
-      - configure
+    # depends_on:
+    #   - configure
+    healthcheck:
+      test: tctl status
+      interval: 2s
+      timeout: 2s
+      retries: 3
+      start_period: 5s
     networks:
       teleport:
         aliases:
@@ -40,11 +46,43 @@ services:
     entrypoint: /bin/sh
     command: -c "/etc/teleport.d/scripts/generate-certs.sh"
     volumes:
-      - config:/etc/teleport
+      # - config:/etc/teleport
       - data:/var/lib/teleport
       - certs:/mnt/shared/certs
     depends_on:
       - teleport
+    networks:
+      - teleport
+
+  #
+  # node1
+  #
+  node1:
+    image: public.ecr.aws/gravitational/teleport-lab:10
+    # entrypoint: /bin/sh
+    # command: -c "/usr/bin/dumb-init teleport start -d -c /etc/teleport/teleport.yaml"
+    volumes:
+      - $PWD/config/teleport-client.yaml:/etc/teleport/teleport.yaml
+      - certs:/mnt/shared/certs
+    depends_on:
+      teleport:
+        condition: service_healthy
+    networks:
+      - teleport
+
+  #
+  # node2
+  #
+  node2:
+    image: public.ecr.aws/gravitational/teleport-lab:10
+    # entrypoint: /bin/sh
+    # command: -c "/usr/bin/dumb-init teleport start -d -c /etc/teleport/teleport.yaml"
+    volumes:
+      - $PWD/config/teleport-client.yaml:/etc/teleport/teleport.yaml
+      - certs:/mnt/shared/certs
+    depends_on:
+      teleport:
+        condition: service_healthy
     networks:
       - teleport
 
@@ -87,7 +125,7 @@ services:
 volumes:
   certs: 
   data: 
-  config: 
+  # config: 
 
 networks:
   teleport:

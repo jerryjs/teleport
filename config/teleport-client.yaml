@@ -1,0 +1,30 @@
+version: v2
+teleport:
+  data_dir: /var/lib/teleport
+  auth_token: "duosecurity"
+  auth_servers:
+    - teleport:3025
+  log:
+    output: stderr
+    severity: INFO
+    format:
+      output: text
+  ca_pin: ""
+  diag_addr: ""
+auth_service:
+  enabled: "no"
+ssh_service:
+  enabled: "yes"
+  labels:
+    env: example
+  commands:
+  - name: hostname
+    command: [hostname]
+    period: 1m0s
+  - name: arch
+    command: [uname, -p]
+    period: 1h0m0s
+proxy_service:
+  enabled: "no"
+  https_keypairs: []
+  acme: {}

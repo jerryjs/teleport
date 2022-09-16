@@ -1,0 +1,41 @@
+version: v2
+teleport:
+  nodename: luna.teleport
+  data_dir: /var/lib/teleport
+  auth_servers:
+  - 127.0.0.1:3025
+  log:
+    output: stderr
+    severity: INFO
+    format:
+      output: text
+  ca_pin: ""
+  diag_addr: ""
+auth_service:
+  cluster_name: teleport
+  enabled: "yes"
+  listen_addr: 0.0.0.0:3025
+  proxy_listener_mode: multiplex
+  tokens:
+    - "proxy,node:duosecurity"
+ssh_service:
+  enabled: "yes"
+  labels:
+    env: example
+  commands:
+  - name: hostname
+    command: [hostname]
+    period: 1m0s
+  - name: arch
+    command: [uname, -p]
+    period: 1h0m0s
+proxy_service:
+  enabled: "yes"
+  # The DNS name of the proxy
+  public_addr: ["proxy.luna.teleport:443"]
+  # Web listen host:port
+  web_listen_addr: "0.0.0.0:443"
+  listen_addr: 0.0.0.0:3023
+  tunnel_listen_addr: 0.0.0.0:3024
+  https_keypairs: []
+  acme: {}
